@@ -47,6 +47,10 @@ const DISK_WIPE = /\b(?:wipefs|diskpart|mkfs\b|mkfs\.|shred\s+(?:-n\s+\d+\s+)?\/
 const DISK_FORMAT = /\b(?:format\s+[A-Za-z]:|fdisk\b[\s\S]{0,80}(?:wipe|delete|d\b))/i
 const GIT_PUSH = /\bgit\s+push\b/i
 const FORCE_PUSH = /(?:^|\s)(?:-f|--force|--force-with-lease)(?:\s|$)/i
+const GIT_RESET_HARD = /\bgit\s+reset\s+--hard\b/i
+const GIT_CLEAN = /\bgit\s+clean\b/i
+const GIT_CLEAN_FORCE = /(?:^|\s)-(?:fdx|dfx|fxd|xfd|dxf|xdf|f\b|d\b|x\b)(?:\s|$)/i
+const GIT_CLEAN_LONG = /--(?:force|all|exclude-dir)/i
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -130,6 +134,22 @@ function deleteTargetOf(command: string, home: string, credentialNames: readonly
   return undefined
 }
 
+function gitCleanTargetOf(command: string, credentialNames: readonly string[]): string | undefined {
+  const after = command.replace(/^.*\bgit\s+clean\b/i, '').trim()
+  const tokens = after.split(/[\s;|&]+/)
+  for (const raw of tokens) {
+    const token = raw.replace(/^['"]|['";,]+$/g, '')
+    if (token === '' || token.startsWith('-') || token.startsWith('--') || /^\/[sqf]$/i.test(token)) continue
+    const base = basename(token).toLowerCase()
+    const looksLikePath =
+      token.startsWith('~') || token.startsWith('$HOME') || token.startsWith('/') ||
+      /^[A-Za-z]:[\\/]/.test(token) || token.startsWith('.') || token.startsWith('%') ||
+      credentialNames.some(name => base === name.toLowerCase())
+    if (looksLikePath) return token
+  }
+  return undefined
+}
+
 /** Deterministic fuse checks. A block is monotonic and cannot be re-allowed. */
 export function evaluateFuse(toolName: string, args: unknown, ctx: RuleContext): FuseEvaluation {
   const command = commandOf(toolName, args)
@@ -160,6 +180,26 @@ export function evaluateFuse(toolName: string, args: unknown, ctx: RuleContext):
     )
     if (protectedBranch || protectedRemote) {
       return { blocked: true, reason: '保险丝：force push 到受保护分支/远端' }
+    }
+  }
+
+  if (GIT_RESET_HARD.test(text)) {
+    const lower = text.toLowerCase()
+    const protectedBranch = ctx.protectedBranches.some(branch =>
+      new RegExp(`(?:^|[/: ])${escapeRegExp(branch.toLowerCase())}(?:\\s|$|["'])`).test(lower),
+    )
+    const protectedRemote = ctx.protectedRemotes.some(remote =>
+      new RegExp(`(?:^|\\s)${escapeRegExp(remote.toLowerCase())}(?:\\s|$)`).test(lower),
+    )
+    if (protectedBranch || protectedRemote) {
+      return { blocked: true, reason: '保险丝：git reset --hard 到受保护分支/远端' }
+    }
+  }
+
+  if (GIT_CLEAN.test(text) && (GIT_CLEAN_FORCE.test(text) || GIT_CLEAN_LONG.test(text))) {
+    const target = gitCleanTargetOf(text, ctx.credentialFileNames)
+    if (target !== undefined && isProtectedPath(target, ctx)) {
+      return { blocked: true, reason: `保险丝：git clean 删除受保护路径 ${target}` }
     }
   }
 
