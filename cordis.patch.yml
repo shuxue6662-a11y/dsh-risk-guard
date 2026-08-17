@@ -1,0 +1,5 @@
+- insert:
+    - id: risk-guard
+      name: 'dsh-risk-guard'
+      config:
+        fuseEnabled: true

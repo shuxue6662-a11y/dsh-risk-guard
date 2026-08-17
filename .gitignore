@@ -1,0 +1,7 @@
+node_modules/
+lib/
+*.tsbuildinfo
+*.log
+.serena/
+.DS_Store
+coverage/
