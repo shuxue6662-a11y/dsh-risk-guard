@@ -18,6 +18,13 @@ describe('redactText', () => {
     expect(redactText(block)).toContain('[REDACTED]')
   })
 
+  it('masks JWTs, npm tokens and Slack tokens', () => {
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+    expect(redactText(jwt)).not.toMatch(/eyJ[A-Za-z0-9_-]{8,}\.eyJ/)
+    expect(redactText('token npm_1234567890abcdefghijklmnopqrstuvwxyzABCD')).toContain('npm_[REDACTED]')
+    expect(redactText('token xoxb-1234567890-abcdefghij-klmnopqrstuvwxyz')).toContain('xox[REDACTED]')
+  })
+
   it('masks password and secret assignments', () => {
     expect(redactText('password=hunter2')).toBe('password=[REDACTED]')
     expect(redactText('"api_key": "abc123"')).toContain('api_key')

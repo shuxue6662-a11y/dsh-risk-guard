@@ -5,6 +5,9 @@ const API_KEY = /\bsk-[A-Za-z0-9_-]{16,}\b/g
 const AWS_KEY = /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g
 const PRIVATE_KEY = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g
 const BEARER = /\bBearer\s+[A-Za-z0-9._~+/-]{8,}\b/gi
+const JWT = /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g
+const NPM_TOKEN = /\bnpm_[A-Za-z0-9]{30,}\b/g
+const SLACK_TOKEN = /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g
 const GENERIC_ASSIGNMENT = /\b(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|private[_-]?key)\b["']?\s*[:=]\s*["']?[^\s,;"']+/gi
 const ENV_LINE = /(^|\n)\s*([A-Z][A-Z0-9_]{2,})\s*=\s*[^\r\n]+/g
 
@@ -23,6 +26,9 @@ function redactTextOnce(text: string): string {
     .replace(API_KEY, 'sk-[REDACTED]')
     .replace(AWS_KEY, 'AKIA[REDACTED]')
     .replace(BEARER, 'Bearer [REDACTED]')
+    .replace(JWT, 'eyJ[REDACTED]')
+    .replace(NPM_TOKEN, 'npm_[REDACTED]')
+    .replace(SLACK_TOKEN, 'xox[REDACTED]')
     .replace(GENERIC_ASSIGNMENT, maskGeneric)
     .replace(ENV_LINE, maskEnvLine)
 }
