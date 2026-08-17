@@ -4,6 +4,7 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-risk-guard)](https://www.npmjs.com/package/dsh-risk-guard)
 [![License](https://img.shields.io/npm/l/dsh-risk-guard)](LICENSE)
+[![CI](https://github.com/shuxue6662-a11y/dsh-risk-guard/actions/workflows/verify.yml/badge.svg)](https://github.com/shuxue6662-a11y/dsh-risk-guard/actions)
 [![dsh](https://img.shields.io/badge/dsh-0.1.0--rc.6-202724)](https://github.com/deepseek-ai/deepseek-harness)
 
 ## 功能
@@ -140,6 +141,10 @@ dsh plugin --profile web add .
   不一致。请重新安装插件并执行 `pnpm dedupe`。
 - **账单为空**——先开新一轮并跑几次工具调用；记录是异步写入的。
 - **完全不想拦截**——设 `fuseEnabled: false`。
+
+## 贡献
+
+参见 [CONTRIBUTING.md](CONTRIBUTING.md) 与 [SECURITY.md](SECURITY.md)。
 
 ## License
 

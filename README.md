@@ -4,6 +4,7 @@ Zero-interruption audit + fuse blocking for [DeepSeek Harness](https://github.co
 
 [![npm](https://img.shields.io/npm/v/dsh-risk-guard)](https://www.npmjs.com/package/dsh-risk-guard)
 [![License](https://img.shields.io/npm/l/dsh-risk-guard)](LICENSE)
+[![CI](https://github.com/shuxue6662-a11y/dsh-risk-guard/actions/workflows/verify.yml/badge.svg)](https://github.com/shuxue6662-a11y/dsh-risk-guard/actions)
 [![dsh](https://img.shields.io/badge/dsh-0.1.0--rc.6-202724)](https://github.com/deepseek-ai/deepseek-harness)
 
 ## Features
@@ -151,6 +152,10 @@ while keeping the audit recorder active.
 - **The bill is empty** — start a new turn and run a few tool calls; records
   are written asynchronously.
 - **I want zero blocking** — set `fuseEnabled: false`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 
