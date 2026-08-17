@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -54,5 +54,21 @@ describe('RiskRecorder', () => {
     expect(files.some(file => file.endsWith('.gz'))).toBe(true)
     const all = await recorder.readAll()
     expect(all).toHaveLength(8)
+  })
+
+  it('prunes archives older than the retention window', async () => {
+    root = await mkdtemp(join(tmpdir(), 'risk-guard-retention-'))
+    const dir = join(root, '.dsh', 'risk-guard')
+    const recorder = new RiskRecorder({ dir, retentionDays: 1 })
+    const now = Date.now()
+    const oldStamp = now - 2 * 24 * 60 * 60 * 1000
+    const freshStamp = now - 60 * 60 * 1000
+    await mkdir(dir, { recursive: true })
+    await writeFile(join(dir, `2026-08.jsonl.${oldStamp}.gz`), 'old')
+    await writeFile(join(dir, `2026-08.jsonl.${freshStamp}.gz`), 'fresh')
+
+    expect(await recorder.pruneArchives(now)).toBe(1)
+    const files = await readdir(dir)
+    expect(files).toEqual([`2026-08.jsonl.${freshStamp}.gz`])
   })
 })

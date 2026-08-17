@@ -8,6 +8,7 @@ import type { AuditRecord } from './types.js'
 export interface RecorderOptions {
   readonly dir: string
   readonly maxFileSizeMb?: number
+  readonly retentionDays?: number
 }
 
 /**
@@ -18,12 +19,15 @@ export interface RecorderOptions {
 export class RiskRecorder {
   private readonly dir: string
   private readonly maxBytes: number
+  private readonly retentionMs: number
   private queue: Promise<void> = Promise.resolve()
   private readonly cachedBytes = new Map<string, number>()
+  private lastPrune = 0
 
   constructor(options: RecorderOptions) {
     this.dir = options.dir
     this.maxBytes = (options.maxFileSizeMb ?? 50) * 1024 * 1024
+    this.retentionMs = (options.retentionDays ?? 30) * 24 * 60 * 60 * 1000
   }
 
   private monthFile(time: Date): string {
@@ -34,6 +38,11 @@ export class RiskRecorder {
   record(record: AuditRecord): Promise<void> {
     const line = `${JSON.stringify(record)}\n`
     const file = this.monthFile(new Date(record.time))
+    const now = Date.now()
+    if (now - this.lastPrune > 24 * 60 * 60 * 1000) {
+      this.lastPrune = now
+      this.queue = this.queue.then(() => this.pruneArchives(now).then(() => undefined)).catch(() => undefined)
+    }
     const operation = this.queue.then(async () => {
       await this.append(file, line)
     })
@@ -60,6 +69,22 @@ export class RiskRecorder {
     await pipeline(createReadStream(file), createGzip(), createWriteStream(archivePath))
     await unlink(file).catch(() => undefined)
     this.cachedBytes.delete(file)
+  }
+
+  /** Delete gzip archives older than the retention window. Returns the count removed. */
+  async pruneArchives(now = Date.now()): Promise<number> {
+    const files = await readdir(this.dir).catch(() => [] as string[])
+    let removed = 0
+    for (const file of files) {
+      if (!file.endsWith('.gz')) continue
+      const timestamp = Number(file.slice(0, -'.gz'.length).split('.').pop())
+      if (!Number.isFinite(timestamp)) continue
+      if (now - timestamp > this.retentionMs) {
+        await unlink(join(this.dir, file)).catch(() => undefined)
+        removed += 1
+      }
+    }
+    return removed
   }
 
   /** Read every audit record from current and gzip-archived JSONL files. */
