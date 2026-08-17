@@ -28,6 +28,7 @@ export function applyCumulative(
   recent: readonly RecentEvent[],
   now: number,
   windowMs = WINDOW_MS,
+  highRiskFloor = HIGH_RISK_FLOOR,
 ): CumulativeResult {
   let score = base
   const extraReasons: string[] = []
@@ -43,7 +44,7 @@ export function applyCumulative(
   }
 
   const last = recent[recent.length - 1]
-  if (last !== undefined && base >= HIGH_RISK_FLOOR && last.score >= HIGH_RISK_FLOOR) {
+  if (last !== undefined && base >= highRiskFloor && last.score >= highRiskFloor) {
     score += CONSECUTIVE_HIGH_BONUS
     extraReasons.push(`连续高风险调用(+${CONSECUTIVE_HIGH_BONUS})`)
   }

@@ -82,6 +82,8 @@ dsh plugin --profile web add .
 | --- | --- | --- |
 | `fuseEnabled` | `true` | 保险丝总开关 |
 | `maxFileSizeMb` | `50` | 月度 JSONL 超过该大小自动 gzip 归档 |
+| `cumulativeRiskWindowMs` | `600000` | 同标签高频加分的时间窗口（毫秒） |
+| `highRiskThreshold` | `60` | 连续高风险加分的分数门槛 |
 | `workspaceRoot` | 未设置 | 用于识别"工作区外写入" |
 | `homeDir` | 系统 home | 路径规则与 `~` 展开使用的 home |
 | `dshHome` | `~/.dsh` 或 `$DSH_HOME` | 审计数据存放于 `<dshHome>/risk-guard` |

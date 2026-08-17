@@ -88,6 +88,8 @@ All options are optional; defaults are shown below.
 | --- | --- | --- |
 | `fuseEnabled` | `true` | master switch for fuse blocking |
 | `maxFileSizeMb` | `50` | gzip-archive the monthly JSONL above this size |
+| `cumulativeRiskWindowMs` | `600000` | rolling window for the repeat-tag risk bonus |
+| `highRiskThreshold` | `60` | score floor for the consecutive-high-risk bonus |
 | `workspaceRoot` | unset | detect writes outside the workspace |
 | `homeDir` | OS home | home used by path rules and `~` expansion |
 | `dshHome` | `~/.dsh` or `$DSH_HOME` | audit store at `<dshHome>/risk-guard` |

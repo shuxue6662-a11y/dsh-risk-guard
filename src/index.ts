@@ -19,6 +19,8 @@ export const inject = ['tools']
 export interface Config {
   readonly fuseEnabled?: boolean
   readonly maxFileSizeMb?: number
+  readonly cumulativeRiskWindowMs?: number
+  readonly highRiskThreshold?: number
   readonly workspaceRoot?: string
   readonly homeDir?: string
   readonly dshHome?: string
@@ -30,6 +32,8 @@ export interface Config {
 export const Config: z<Config> = z.object({
   fuseEnabled: z.boolean().default(true),
   maxFileSizeMb: z.number().default(50),
+  cumulativeRiskWindowMs: z.number().default(600_000),
+  highRiskThreshold: z.number().default(60),
   workspaceRoot: z.string(),
   homeDir: z.string(),
   dshHome: z.string(),
@@ -68,7 +72,14 @@ export function apply(ctx: Context, config: Config): void {
     const sessionId = String(execution.agent?.session?.header?.id ?? 'unknown')
     const evaluation = evaluateRisk(execution.name, execution.arguments, ruleContext)
     const history = recentEvents.get(sessionId) ?? []
-    const cumulative = applyCumulative(evaluation.score, evaluation.tags, history, Date.now())
+    const cumulative = applyCumulative(
+      evaluation.score,
+      evaluation.tags,
+      history,
+      Date.now(),
+      config.cumulativeRiskWindowMs ?? 600_000,
+      config.highRiskThreshold ?? 60,
+    )
     history.push({ time: Date.now(), tags: evaluation.tags, score: cumulative.score })
     if (history.length > 200) history.splice(0, history.length - 200)
     recentEvents.set(sessionId, history)

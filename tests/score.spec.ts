@@ -29,6 +29,12 @@ describe('applyCumulative', () => {
     expect(result.score).toBe(80)
   })
 
+  it('respects a custom high-risk floor', () => {
+    const recent = [{ time: now - 1_000, tags: ['destructive' as const], score: 70 }]
+    expect(applyCumulative(70, ['destructive'], recent, now, 600_000, 80).score).toBe(70)
+    expect(applyCumulative(70, ['destructive'], recent, now, 600_000, 50).score).toBe(80)
+  })
+
   it('caps at 100', () => {
     const recent = [
       { time: now - 1_000, tags: ['network-egress' as const], score: 90 },
