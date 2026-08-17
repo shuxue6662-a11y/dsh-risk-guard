@@ -73,7 +73,9 @@ describe('evaluateFuse', () => {
     expect(evaluateFuse('fs_delete', { path: join(home, '.env') }, ctx).blocked).toBe(true)
     expect(evaluateFuse('fs_delete', { path: join(workspace, 'tmp.txt') }, ctx).blocked).toBe(false)
   })
+})
 
+describe.skipIf(process.platform !== 'win32')('Windows deletion rules', () => {
   it('handles Windows deletion commands and %USERPROFILE% expansion', () => {
     expect(evaluateFuse('bash', { command: 'del /f /q %USERPROFILE%\\.env' }, ctx).blocked).toBe(true)
     expect(evaluateFuse('bash', { command: 'rd /s /q %USERPROFILE%' }, ctx).blocked).toBe(true)
