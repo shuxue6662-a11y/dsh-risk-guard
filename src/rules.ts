@@ -62,6 +62,7 @@ export function resolvePathToken(raw: string, home: string): string {
   if (path === '~') return home
   if (path.startsWith('~/') || path.startsWith('~\\')) return join(home, path.slice(2))
   path = path.replace(/^\$\{HOME\}/, home).replace(/^\$HOME\b/, home)
+  path = path.replace(/^%USERPROFILE%/i, home).replace(/^%HOME%/i, home)
   path = path.replace(/^(['"])(.*)\1$/, '$2')
   return path
 }
@@ -123,9 +124,10 @@ function deleteTargetOf(command: string, home: string, credentialNames: readonly
       const raw = tokens[cursor].replace(/^['"]|['";,]+$/g, '')
       if (raw === '' || raw === '&&' || raw === '||') continue
       if (raw.startsWith('-') || raw.startsWith('--')) continue
+      if (/^\/[sqf]$/i.test(raw)) continue
       const base = basename(raw).toLowerCase()
       const looksLikePath =
-        raw.startsWith('~') || raw.startsWith('$HOME') || raw.startsWith('/') ||
+        raw.startsWith('~') || raw.startsWith('$HOME') || raw.startsWith('%') || raw.startsWith('/') ||
         /^[A-Za-z]:[\\/]/.test(raw) || raw.startsWith('.') ||
         credentialNames.some(name => base === name.toLowerCase())
       if (looksLikePath) return raw
