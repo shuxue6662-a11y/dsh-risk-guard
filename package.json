@@ -1,6 +1,6 @@
 {
   "name": "dsh-risk-guard",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Zero-interruption audit + fuse blocking for DeepSeek Harness. / 零打扰 Agent 审计与保险丝拦截插件。",
   "author": "Holden Rawn <shuxue6662@gmail.com>",
   "keywords": [

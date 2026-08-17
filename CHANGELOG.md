@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.2.0)
+## 0.2.0 — 2026-08-17
 
 - `feat(rules)`: block destructive `git reset --hard` to protected refs and
   `git clean -fdx` on protected paths.
