@@ -39,6 +39,7 @@ export interface SessionBill {
   readonly totalScore: number
   readonly highRiskCount: number
   readonly blockedCount: number
+  readonly riskLevels: { low: number; medium: number; high: number }
   readonly tagCounts: Record<string, number>
   readonly records: readonly AuditRecord[]
 }

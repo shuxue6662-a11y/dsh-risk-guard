@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildBill, buildSessionBills, billToMarkdown, billsToMarkdown, sessionSummariesToMarkdown } from '../src/report.js'
+import { buildBill, buildSessionBills, billToMarkdown, billsToMarkdown, parseBillFlags, sessionSummariesToMarkdown } from '../src/report.js'
 import type { AuditRecord } from '../src/types.js'
 
 function record(index: number, score: number, tags: string[], time: string): AuditRecord {
@@ -33,6 +33,7 @@ describe('buildBill', () => {
     expect(bill.highRiskCount).toBe(2)
     expect(bill.blockedCount).toBe(0)
     expect(bill.tagCounts.destructive).toBe(1)
+    expect(bill.riskLevels).toEqual({ low: 1, medium: 1, high: 1 })
   })
 
   it('filters to the last turn when requested', () => {
@@ -43,6 +44,25 @@ describe('buildBill', () => {
     const bill = buildBill(records, 'session-a', { lastTurnOnly: true, turnEnds: [new Date('2026-08-17T08:00:02.000Z').getTime()] })
     expect(bill.callCount).toBe(1)
     expect(bill.records[0]?.callId).toBe('call-2')
+  })
+
+  it('filters records after --since', () => {
+    const records = [
+      record(1, 5, ['benign'], '2026-08-17T08:00:01.000Z'),
+      record(2, 70, ['destructive'], '2026-08-17T08:00:03.000Z'),
+    ]
+    const bill = buildBill(records, 'session-a', { since: new Date('2026-08-17T08:00:02.000Z').getTime() })
+    expect(bill.callCount).toBe(1)
+    expect(bill.records[0]?.callId).toBe('call-2')
+  })
+})
+
+describe('parseBillFlags', () => {
+  it('parses flags and since values', () => {
+    expect(parseBillFlags('--all --json')).toEqual({ turn: false, all: true, json: true, since: undefined })
+    expect(parseBillFlags('--turn')).toEqual({ turn: true, all: false, json: false, since: undefined })
+    expect(parseBillFlags('--since=2026-08-01').since).toBe(Date.parse('2026-08-01'))
+    expect(parseBillFlags('--since=not-a-date').since).toBeUndefined()
   })
 })
 

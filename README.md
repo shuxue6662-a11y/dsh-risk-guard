@@ -73,6 +73,8 @@ dsh plugin --profile web add .
 /risk-guard              operation bill for the current session
 /risk-guard --turn       only the last turn
 /risk-guard --all        summary + bills for every recorded session
+/risk-guard --since=2026-08-01
+                         only records from this date (with any other flag)
 /risk-guard --json       machine-readable output
 ```
 

@@ -68,6 +68,8 @@ dsh plugin --profile web add .
 /risk-guard              当前会话操作账单
 /risk-guard --turn       只看最近一轮
 /risk-guard --all        全部会话的汇总 + 账单
+/risk-guard --since=2026-08-01
+                         只看该日期之后的记录（可与其它参数组合）
 /risk-guard --json       机器可读输出
 ```
 

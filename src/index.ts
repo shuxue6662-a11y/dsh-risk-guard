@@ -10,7 +10,7 @@ import { RiskRecorder } from './recorder.js'
 import { evaluateFuse, evaluateRisk, type RuleContext, DEFAULT_CREDENTIAL_FILE_NAMES } from './rules.js'
 import { applyCumulative, type RecentEvent } from './score.js'
 import { digestOf, redactText, redactValue } from './redact.js'
-import { buildBill, buildSessionBills, billToMarkdown, billsToMarkdown, sessionSummariesToMarkdown } from './report.js'
+import { buildBill, buildSessionBills, billToMarkdown, billsToMarkdown, parseBillFlags, sessionSummariesToMarkdown } from './report.js'
 import type { AuditRecord } from './types.js'
 
 export const name = 'risk-guard'
@@ -121,28 +121,28 @@ export function apply(ctx: Context, config: Config): void {
     commandContext.commands.register({
       name: 'risk-guard',
       description: 'Show the local risk audit bill for this session, one turn, or all history.',
-      input: { hint: 'risk-guard [--turn] [--all] [--json]' },
+      input: { hint: 'risk-guard [--turn] [--all] [--json] [--since=YYYY-MM-DD]' },
       handler: async ({ agent, rawInput }: CommandInvocation): Promise<CommandResult> => {
-        const flags = rawInput.split(/\s+/).filter(Boolean)
-        const wantTurn = flags.includes('--turn')
-        const wantAll = flags.includes('--all')
-        const wantJson = flags.includes('--json')
+        const flags = parseBillFlags(rawInput)
         const sessionId = String(agent.session.header.id)
-        const records = await recorder.readAll()
+        let records = await recorder.readAll()
+        if (flags.since !== undefined) {
+          records = records.filter(record => new Date(record.time).getTime() >= (flags.since ?? 0))
+        }
 
         let text: string
-        if (wantAll) {
+        if (flags.all) {
           const bills = buildSessionBills(records)
-          text = wantJson
+          text = flags.json
             ? JSON.stringify(bills, null, 2)
             : `${sessionSummariesToMarkdown(bills)}\n\n---\n\n${billsToMarkdown(bills)}`
         } else {
           const sessionRecords = records.filter(record => record.sessionId === sessionId)
           const bill = buildBill(sessionRecords, sessionId, {
-            lastTurnOnly: wantTurn,
+            lastTurnOnly: flags.turn,
             turnEnds: turnEnds.get(sessionId),
           })
-          text = wantJson ? JSON.stringify(bill, null, 2) : billToMarkdown(bill)
+          text = flags.json ? JSON.stringify(bill, null, 2) : billToMarkdown(bill)
         }
 
         return { kind: 'success', text }

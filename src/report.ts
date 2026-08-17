@@ -3,19 +3,37 @@ import type { AuditRecord, SessionBill } from './types.js'
 export interface BillOptions {
   readonly lastTurnOnly?: boolean
   readonly turnEnds?: readonly number[]
+  readonly since?: number
 }
 
 function timeOf(record: AuditRecord): number {
   return new Date(record.time).getTime()
 }
 
+/** Parse `/risk-guard` flags into typed options. Pure and testable. */
+export function parseBillFlags(rawInput: string): { turn: boolean; all: boolean; json: boolean; since?: number } {
+  const flags = rawInput.split(/\s+/).filter(Boolean)
+  const sinceFlag = flags.find(flag => flag.startsWith('--since='))
+  const sinceValue = sinceFlag?.slice('--since='.length)
+  const parsed = sinceValue === undefined ? undefined : Date.parse(sinceValue)
+  return {
+    turn: flags.includes('--turn'),
+    all: flags.includes('--all'),
+    json: flags.includes('--json'),
+    since: Number.isNaN(parsed) ? undefined : parsed,
+  }
+}
+
 /** Aggregate records into one per-session bill (optionally the last turn only). */
 export function buildBill(records: readonly AuditRecord[], sessionId: string, options: BillOptions = {}): SessionBill {
   const sorted = [...records].sort((left, right) => left.time.localeCompare(right.time))
   let selected = sorted
+  if (options.since !== undefined) {
+    selected = selected.filter(record => timeOf(record) >= (options.since ?? 0))
+  }
   if (options.lastTurnOnly && (options.turnEnds?.length ?? 0) > 0) {
     const lastEnd = Math.max(...(options.turnEnds ?? []))
-    selected = sorted.filter(record => timeOf(record) > lastEnd)
+    selected = selected.filter(record => timeOf(record) > lastEnd)
   }
 
   const tagCounts: Record<string, number> = {}
@@ -27,6 +45,12 @@ export function buildBill(records: readonly AuditRecord[], sessionId: string, op
   const maxScore = selected.reduce((max, record) => Math.max(max, record.score), 0)
   const highRiskCount = selected.filter(record => record.score >= 40).length
   const blockedCount = selected.filter(record => record.blockedByFuse !== undefined).length
+  const riskLevels = { low: 0, medium: 0, high: 0 }
+  for (const record of selected) {
+    if (record.score >= 80) riskLevels.high += 1
+    else if (record.score >= 40) riskLevels.medium += 1
+    else riskLevels.low += 1
+  }
 
   return {
     sessionId,
@@ -38,6 +62,7 @@ export function buildBill(records: readonly AuditRecord[], sessionId: string, op
     totalScore,
     highRiskCount,
     blockedCount,
+    riskLevels,
     tagCounts,
     records: selected,
   }
@@ -66,6 +91,7 @@ export function billToMarkdown(bill: SessionBill): string {
     '',
     `- 时间范围: ${bill.from ?? '-'} → ${bill.to ?? '-'}`,
     `- 工具调用: ${bill.callCount} 次 | 轮次: ${bill.turnCount} | 高风险(≥40): ${bill.highRiskCount} | 保险丝拦截: ${bill.blockedCount}`,
+    `- 风险等级: 低=${bill.riskLevels.low} | 中=${bill.riskLevels.medium} | 高=${bill.riskLevels.high}`,
     `- 最高风险分: ${bill.maxScore} | 风险总分: ${bill.totalScore}`,
     `- 标签分布: ${Object.entries(bill.tagCounts).map(([tag, count]) => `${tag}=${count}`).join(', ') || '无'}`,
   ]
